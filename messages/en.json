@@ -1,11 +1,12 @@
 {
   "Nav": {
     "home": "Home",
-    "text-to-image": "Text to Image",
+    "features": "Features",
+    "text-to-image": "Image AI",
     "logOut": "Log Out",
     "login": "Sign In",
     "dashboard": "My Workspace",
-    "pricing": "Pricing",
+    "pricing": "Price",
     "create": "Create a Video",
     "generator": "Video Generator"
   },
@@ -15,9 +16,23 @@
       "description": "AI Video Generator is a leading AI platform that uses advanced artificial intelligence technology to craft personalized videos."
     },
     "top": {
-      "subTitle": "AI Video Generator",
-      "description": "AI Video Generator empowers anyone to create expressive videos from simple text or images. Whether it's a romantic moment or a playful memory, let our AI bring your vision to life—no editing skills needed.",
-      "button1": "Try AI Video Generator for Free",
+      "title": {
+        "part1": "AI Image Generator -",
+        "part2": "Fast & Free",
+        "part3": "Image Generator"
+      },
+      "subTitle": "AI Image Generator",
+      "description": "Create stunning, high-quality images with advanced AI models. Fast generation, accurate results, and free credits to get started.",
+      "cta": {
+        "primary": "Start Creating",
+        "secondary": "View Features"
+      },
+      "features": {
+        "fast": "Ultra-fast Generation",
+        "accurate": "High Quality Results",
+        "free": "Free Credits Daily"
+      },
+      "button1": "Try AI Image Generator for Free",
       "button2": "View Subscription Options"
     },
     "userExample": {
@@ -65,31 +80,31 @@
       "A6": "Our annual plan offers the best price per credit. Perfect for regular creators looking to maximize output at a lower cost."
     },
     "Features": {
-      "heading": "Powerful Features to Fuel Your Creativity",
-      "subheading": "Make AI videos that feel personal, dynamic, and share-worthy.",
+      "heading": "Core Features",
+      "subheading": "A glance at the capabilities of our AI image generation platform",
       "feature1": {
-        "title": "Realistic AI Animation",
-        "description": "Turn static photos into vibrant video scenes that feel alive."
+        "title": "Photorealistic Quality",
+        "description": "Photography-level realism with fine control over details, lighting, and textures. Achieves excellent aesthetic quality in composition and overall mood."
       },
       "feature2": {
-        "title": "Prompt-Based Personalization",
-        "description": "Write your scene, style, or emotion—our AI interprets and animates it."
+        "title": "Ultra-fast Inference",
+        "description": "Achieves sub-second inference latency on enterprise-grade GPUs. Only 8 steps needed for generation."
       },
       "feature3": {
-        "title": "High-Resolution Exports",
-        "description": "Download full-quality videos ready to post, share, or keep forever."
+        "title": "Bilingual Text Rendering",
+        "description": "Accurate rendering of both Chinese and English text while preserving facial realism and overall aesthetic composition."
       },
       "feature4": {
-        "title": "Intuitive Creation Process",
-        "description": "No timeline, no tools—just you and your imagination."
+        "title": "Multiple AI Models",
+        "description": "Access to various state-of-the-art AI models including Flux, Seedream, and more for different creative needs."
       },
       "feature5": {
-        "title": "Instant Sharing",
-        "description": "Easily download or share your videos across platforms."
+        "title": "Flexible Aspect Ratios",
+        "description": "Generate images in 7 different aspect ratios (1:1, 16:9, 3:2, 2:3, 3:4, 4:3, 9:16) for any use case."
       },
       "feature6": {
-        "title": "Privacy & Data Protection",
-        "description": "We safeguard your content with industry-grade encryption and access controls."
+        "title": "Efficient VRAM Usage",
+        "description": "Can run smoothly on consumer-grade graphics cards with less than 16GB of VRAM, making advanced image generation accessible."
       }
     },
     "generator": {

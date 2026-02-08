@@ -36,47 +36,45 @@ export default function Home({
     },
   ];
 
-  const video = "/resources/example3.webm";
   const whatImage = "/resources/example3.webp";
   const howImage = "/resources/example2.webp";
 
-  const effectId = "1";
   const multiLanguage = "HomePage";
-  const multiLanguageOfGenerator = "HomePage.generator";
 
   return (
     <main className="flex flex-col items-center rounded-2xl px-3 md:rounded-3xl md:px-0">
-      <div className="py-10 ">
+      {/* Hero Section */}
+      <div className="py-10 w-full">
         <TopHero multiLanguage={multiLanguage} locale={locale} />
       </div>
-      <div className="w-full flex justify-center items-center pt-3 mb-8">
-        <WorkerWrapper
-          effectId={effectId}
-          promotion={video}
-          lang={multiLanguageOfGenerator}
-        />
-      </div>
-      <div className="pt-20 md:pt-40">
-        <UserExample multiLanguage={multiLanguage} images={images} />
-      </div>
 
-      <div className="pt-20 md:pt-40 w-full">
-        <What multiLanguage={multiLanguage} image={whatImage} />
-      </div>
-
-      <div className="pt-20 md:pt-40 w-full">
-        <How multiLanguage={multiLanguage} image={howImage} />
-      </div>
-
-      <div className="pt-20 md:pt-40 w-full">
+      {/* Features Section - with ID for navigation */}
+      <div id="features" className="pt-16 md:pt-24 w-full scroll-mt-20">
         <FeatureHero multiLanguage={multiLanguage} />
       </div>
 
-      <div className="pt-20 md:pt-40 w-full">
+      {/* User Examples Gallery */}
+      <div className="pt-20 md:pt-32">
+        <UserExample multiLanguage={multiLanguage} images={images} />
+      </div>
+
+      {/* What Section */}
+      <div className="pt-20 md:pt-32 w-full">
+        <What multiLanguage={multiLanguage} image={whatImage} />
+      </div>
+
+      {/* How It Works */}
+      <div className="pt-20 md:pt-32 w-full">
+        <How multiLanguage={multiLanguage} image={howImage} />
+      </div>
+
+      {/* FAQ Section */}
+      <div className="pt-20 md:pt-32 w-full">
         <Faq multiLanguage={multiLanguage} grid={true} />
       </div>
 
-      <div className="py-20 md:py-40 w-full">
+      {/* CTA Section */}
+      <div className="py-20 md:py-32 w-full">
         <Cta multiLanguage={multiLanguage} />
       </div>
     </main>

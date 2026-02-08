@@ -1,7 +1,7 @@
 import React from "react";
-import TopHero from "@/components/landingpage/top";
-import WorkerWrapper from "@/components/replicate/text-to-image/worker-wraper";
+import EnhancedWorker from "@/components/replicate/text-to-image/enhanced-worker";
 import { getMetadata } from "@/components/seo/seo";
+
 export async function generateMetadata({
   params,
 }: {
@@ -19,22 +19,20 @@ export default function TextToImage({
 }: {
   params: { locale: string };
 }) {
-  const effectId = "2";
-  const multiLanguage = "TextToImage";
-  const outputDefaultImage = "/resources/text-to-image.jpg";
-
   return (
-    <main className="flex flex-col items-center rounded-2xl px-3 md:rounded-3xl md:px-0">
-      <div className="pt-10">
-        <TopHero multiLanguage={multiLanguage} locale={locale} />
+    <main className="flex flex-col items-center px-4 md:px-6 py-10 max-w-[1400px] mx-auto">
+      {/* Page Header */}
+      <div className="text-center mb-10">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+          AI Image Generator
+        </h1>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Create stunning images with advanced AI models. Choose your model, set your preferences, and let AI bring your ideas to life.
+        </p>
       </div>
-      <div className="w-full flex justify-center items-center pt-3 pb-10">
-        <WorkerWrapper
-          effectId={effectId}
-          multiLanguage={multiLanguage}
-          outputDefaultImage={outputDefaultImage}
-        />
-      </div>
+
+      {/* Enhanced Worker Component */}
+      <EnhancedWorker />
     </main>
   );
 }

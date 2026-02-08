@@ -45,6 +45,8 @@ const BasicNavbar = React.forwardRef<HTMLElement, NavbarProps>(
         setActiveTag("text-to-image");
       } else if (pathname.includes("pricing")) {
         setActiveTag("pricing");
+      } else if (pathname.includes("#features")) {
+        setActiveTag("features");
       }
     }, [pathname, session, setUser]);
 
@@ -69,36 +71,37 @@ const BasicNavbar = React.forwardRef<HTMLElement, NavbarProps>(
         onMenuOpenChange={setIsMenuOpen}
       >
         <NavbarBrand>
-          <img
-            src="/logo.jpeg"
-            alt="logo"
-            className="w-9 h-9 md:w-11 md:h-11 mr-2 mb-1 ml-1"
-            loading="lazy"
-          />
-          <p className="text-2xl font-bold hidden lg:block text-blue-700">
-            AI Video Generator
-          </p>
+          <Link href={`/${locale}`} className="flex items-center gap-2">
+            <img
+              src="/logo.jpeg"
+              alt="logo"
+              className="w-9 h-9 md:w-11 md:h-11 mr-2 mb-1 ml-1"
+              loading="lazy"
+            />
+            <p className="text-xl md:text-2xl font-bold hidden lg:block text-blue-700">
+              AI Image Generator
+            </p>
+          </Link>
         </NavbarBrand>
 
         <NavbarContent className="hidden md:flex" justify="center">
-          <NavbarItem onClick={() => handleTagClick("home")}>
+          <NavbarItem onClick={() => handleTagClick("features")}>
             <Link
-              aria-current="page"
               className={cn(
-                "text-black mx-4",
-                activeTag === "home" ? "text-black font-bold" : ""
+                "text-black mx-3 hover:text-blue-600 transition-colors",
+                activeTag === "features" ? "text-blue-600 font-semibold" : ""
               )}
-              href={`/${locale}`}
+              href={`/${locale}/#features`}
               size="md"
             >
-              {t("home")}
+              {t("features")}
             </Link>
           </NavbarItem>
-          <NavbarItem onClick={() => handleTagClick("pricing")}>
+          <NavbarItem onClick={() => handleTagClick("text-to-image")}>
             <Link
               className={cn(
-                "text-black mx-4",
-                activeTag === "text-to-image" ? "text-black font-bold" : ""
+                "text-black mx-3 hover:text-blue-600 transition-colors",
+                activeTag === "text-to-image" ? "text-blue-600 font-semibold" : ""
               )}
               href={`/${locale}/text-to-image`}
               size="md"
@@ -109,8 +112,8 @@ const BasicNavbar = React.forwardRef<HTMLElement, NavbarProps>(
           <NavbarItem onClick={() => handleTagClick("pricing")}>
             <Link
               className={cn(
-                "text-black mx-4",
-                activeTag === "pricing" ? "text-black font-bold" : ""
+                "text-black mx-3 hover:text-blue-600 transition-colors",
+                activeTag === "pricing" ? "text-blue-600 font-semibold" : ""
               )}
               href={`/${locale}/pricing`}
               size="md"
@@ -160,6 +163,7 @@ const BasicNavbar = React.forwardRef<HTMLElement, NavbarProps>(
           <div className="flex flex-col w-full px-6">
             {[
               { tag: "home", path: "" },
+              { tag: "features", path: "#features" },
               { tag: "text-to-image", path: "text-to-image" },
               { tag: "pricing", path: "pricing" },
             ].map(({ tag, path }) => (
