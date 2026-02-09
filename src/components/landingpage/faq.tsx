@@ -1,92 +1,49 @@
-import React from "react";
+﻿import React from "react";
 import { useTranslations } from "next-intl";
-import { Icon } from "@iconify/react/dist/iconify.js";
+import { Icon } from "@iconify/react";
 
-export default function Faq(params: { multiLanguage: string, grid: boolean }) {
+export default function Faq(params: { multiLanguage: string; grid: boolean }) {
   const t = useTranslations(params.multiLanguage);
 
   const faqs = [
-    {
-      title: t('FAQ.Q1'),
-      content: t('FAQ.A1'),
-    },
-    {
-      title: t('FAQ.Q2'), 
-      content: t('FAQ.A2'),
-    },
-    {
-      title: t('FAQ.Q3'),
-      content: t('FAQ.A3'),
-    },
-    {
-      title: t('FAQ.Q4'),
-      content: t('FAQ.A4'),
-    },
-    {
-      title: t('FAQ.Q5'),
-      content: t('FAQ.A5'),
-    },
-    {
-      title: t('FAQ.Q6'),
-      content: t('FAQ.A6'),
-    }
+    { title: t("FAQ.Q1"), content: t("FAQ.A1") },
+    { title: t("FAQ.Q2"), content: t("FAQ.A2") },
+    { title: t("FAQ.Q3"), content: t("FAQ.A3") },
+    { title: t("FAQ.Q4"), content: t("FAQ.A4") },
+    { title: t("FAQ.Q5"), content: t("FAQ.A5") },
+    { title: t("FAQ.Q6"), content: t("FAQ.A6") },
   ];
 
   const firstHalf = faqs.slice(0, Math.ceil(faqs.length / 2));
   const secondHalf = faqs.slice(Math.ceil(faqs.length / 2));
 
   return (
-    <section className="mx-auto w-full max-w-7xl px-0">
-      <div className="mx-auto flex w-full max-w-7xl flex-col items-center gap-6">
-        <h2 className="px-2 mb-10 text-3xl md:text-4xl font-extrabold leading-7 text-blue-700 text-center">
-          {t('FAQ.title')}
-        </h2>
-        <div className={`grid grid-cols-1 gap-6 w-full ${params.grid ? 'md:grid-cols-2' : 'md:grid-cols-1'}`}>
-          <div>
-            {firstHalf.map((item, i) => (
-              <details 
-                key={i}
-                className="group rounded-lg mb-3 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-              >
-                <summary className="cursor-pointer w-full px-6 py-4 md:py-6 flex justify-between items-center">
-                  <h3 className="text-lg font-medium text-left text-black dark:text-white">
-                    {item.title}
-                  </h3>
-                  <Icon 
-                    icon="solar:alt-arrow-down-linear" 
-                    width={24}
-                    className="transform transition-transform group-open:rotate-180 text-black dark:text-white"
-                  />
-                </summary>
-                <div className="px-6 pb-6 pt-0 text-base text-gray-700 dark:text-gray-300">
-                  {item.content}
-                </div>
-              </details>
-            ))}
-          </div>
-          <div>
-            {secondHalf.map((item, i) => (
+    <section className="mx-auto w-full max-w-7xl px-4">
+      <div className="mb-10 text-center">
+        <h2 className="text-3xl font-extrabold text-slate-900 md:text-5xl">{t("FAQ.title")}</h2>
+      </div>
+
+      <div className={`grid grid-cols-1 gap-5 ${params.grid ? "lg:grid-cols-2" : ""}`}>
+        {[firstHalf, secondHalf].map((column, columnIndex) => (
+          <div key={columnIndex}>
+            {column.map((item) => (
               <details
-                key={i}
-                className="group rounded-lg mb-3 bg-white dark:bg-black hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                key={item.title}
+                className="group mb-4 overflow-hidden rounded-2xl border border-slate-200 bg-white/80 shadow-sm"
               >
-                <summary className="cursor-pointer w-full px-6 py-4 md:py-6 flex justify-between items-center">
-                  <h3 className="text-lg font-medium text-left text-black dark:text-white">
-                    {item.title}
-                  </h3>
-                  <Icon 
-                    icon="solar:alt-arrow-down-linear" 
-                    width={24}
-                    className="transform transition-transform group-open:rotate-180 text-black dark:text-white"
+                <summary className="flex cursor-pointer items-center justify-between px-5 py-5 text-left">
+                  <h3 className="pr-4 text-base font-bold text-slate-900">{item.title}</h3>
+                  <Icon
+                    icon="solar:alt-arrow-down-linear"
+                    width={20}
+                    className="text-slate-500 transition-transform duration-300 group-open:rotate-180"
                   />
                 </summary>
-                <div className="px-6 pb-6 pt-0 text-base text-gray-700 dark:text-gray-300">
-                  {item.content}
-                </div>
+                <div className="px-5 pb-5 text-sm leading-7 text-slate-600">{item.content}</div>
               </details>
             ))}
           </div>
-        </div>
+        ))}
       </div>
     </section>
   );

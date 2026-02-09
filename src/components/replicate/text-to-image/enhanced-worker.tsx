@@ -1,7 +1,7 @@
-"use client";
+﻿"use client";
 
 import React, { useState, useEffect } from "react";
-import { Button, Textarea, Select, SelectItem, Input } from "@nextui-org/react";
+import { Button, Textarea, Select, SelectItem, Input, cn } from "@nextui-org/react";
 import Prediction from "@/backend/type/domain/replicate";
 import { useAppContext } from "@/contexts/app";
 import { toast } from "sonner";
@@ -10,11 +10,10 @@ import { handleApiErrors } from "@/components/replicate/common-logic/response";
 import Output from "@/components/replicate/text-to-image/img-output";
 import { UserSubscriptionInfo } from "@/backend/type/domain/user_subscription_info";
 import CreditInfo from "@/components/landingpage/credit-info";
-import { useTranslations } from "next-intl";
+import { Icon } from "@iconify/react";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-// 宽高比配置
 const ASPECT_RATIOS = [
   { key: "1:1", label: "1:1", width: 1024, height: 1024 },
   { key: "16:9", label: "16:9", width: 1024, height: 576 },
@@ -25,44 +24,23 @@ const ASPECT_RATIOS = [
   { key: "9:16", label: "9:16", width: 576, height: 1024 },
 ];
 
-// AI 模型配置
 const AI_MODELS = [
-  {
-    key: "flux-schnell",
-    label: "Flux Schnell",
-    model: "black-forest-labs/flux-schnell",
-    version: null,
-    credit: 1,
-  },
-  {
-    key: "flux-dev",
-    label: "Flux Dev",
-    model: "black-forest-labs/flux-dev",
-    version: null,
-    credit: 2,
-  },
-  {
-    key: "sdxl",
-    label: "SDXL",
-    model: "stability-ai/sdxl",
-    version: null,
-    credit: 1,
-  },
+  { key: "flux-schnell", label: "Flux Schnell", model: "black-forest-labs/flux-schnell", version: null, credit: 1 },
+  { key: "flux-dev", label: "Flux Dev", model: "black-forest-labs/flux-dev", version: null, credit: 2 },
+  { key: "sdxl", label: "SDXL", model: "stability-ai/sdxl", version: null, credit: 1 },
 ];
 
-// 提示词灵感分类
 const PROMPT_CATEGORIES = [
-  { key: "hot", label: "🔥 HOT", icon: "🔥" },
-  { key: "portrait", label: "Portrait", icon: "👤" },
-  { key: "landscape", label: "Landscape", icon: "🏞️" },
-  { key: "architecture", label: "Architecture", icon: "🏛️" },
-  { key: "creative", label: "Creative Art", icon: "🎨" },
-  { key: "animals", label: "Animals", icon: "🦁" },
-  { key: "food", label: "Food", icon: "🍕" },
-  { key: "scifi", label: "Sci-Fi", icon: "🚀" },
+  { key: "hot", label: "Hot" },
+  { key: "portrait", label: "Portrait" },
+  { key: "landscape", label: "Landscape" },
+  { key: "architecture", label: "Architecture" },
+  { key: "creative", label: "Creative" },
+  { key: "animals", label: "Animals" },
+  { key: "food", label: "Food" },
+  { key: "scifi", label: "Sci-Fi" },
 ];
 
-// 提示词示例
 const PROMPT_INSPIRATIONS: Record<string, string[]> = {
   hot: [
     "Fashion model in haute couture dress, dramatic pose, high-fashion photography, studio setting",
@@ -115,13 +93,11 @@ export default function EnhancedWorker() {
   const [outputFormat, setOutputFormat] = useState<string>("jpeg");
   const [prediction, setPrediction] = useState<Prediction | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [userSubscriptionInfo, setUserSubscriptionInfo] =
-    useState<UserSubscriptionInfo | null>(null);
+  const [userSubscriptionInfo, setUserSubscriptionInfo] = useState<UserSubscriptionInfo | null>(null);
   const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
   const [activeCategory, setActiveCategory] = useState("hot");
   const { user } = useAppContext();
   const router = useRouter();
-  const t = useTranslations("TextToImage");
 
   useEffect(() => {
     if (user?.uuid) {
@@ -132,30 +108,21 @@ export default function EnhancedWorker() {
   const fetchUserSubscriptionInfo = async () => {
     if (!user?.uuid) return;
     try {
-      const userSubscriptionInfo = await fetch(
-        "/api/user/get_user_subscription_info",
-        {
-          method: "POST",
-          body: JSON.stringify({ user_id: user.uuid }),
-        }
-      ).then((res) => {
+      const userSubscriptionInfo = await fetch("/api/user/get_user_subscription_info", {
+        method: "POST",
+        body: JSON.stringify({ user_id: user.uuid }),
+      }).then((res) => {
         if (!res.ok) throw new Error("Failed to fetch user subscription info");
         return res.json();
       });
       setUserSubscriptionInfo(userSubscriptionInfo);
       setIsSubscribed(userSubscriptionInfo.subscription_status === "active");
-    } catch (error) {
-      console.error("Failed to fetch subscription info:", error);
+    } catch (err) {
+      console.error("Failed to fetch subscription info:", err);
     }
   };
 
-  const generateRandomSeed = () => {
-    setSeed(Math.floor(Math.random() * 1000000));
-  };
-
-  const handlePromptClick = (promptText: string) => {
-    setPrompt(promptText);
-  };
+  const generateRandomSeed = () => setSeed(Math.floor(Math.random() * 1000000));
 
   const handleGenerate = async () => {
     if (!user) {
@@ -164,14 +131,13 @@ export default function EnhancedWorker() {
       return;
     }
 
-    if (selectedModel.credit > 0) {
-      if (
-        typeof userSubscriptionInfo?.remain_count === "number" &&
-        userSubscriptionInfo.remain_count < selectedModel.credit
-      ) {
-        toast.warning("No credit left");
-        return;
-      }
+    if (
+      selectedModel.credit > 0 &&
+      typeof userSubscriptionInfo?.remain_count === "number" &&
+      userSubscriptionInfo.remain_count < selectedModel.credit
+    ) {
+      toast.warning("No credit left");
+      return;
     }
 
     if (prompt.length === 0) {
@@ -204,23 +170,19 @@ export default function EnhancedWorker() {
 
       let newPrediction = await response.json();
       if (response.status !== 201) {
-        handleApiErrors(newPrediction, router);
+        await handleApiErrors({ response, newPrediction, router });
         setError(newPrediction.detail);
         return;
       }
 
       setPrediction(newPrediction);
 
-      // Poll for results
-      while (
-        newPrediction.status !== "succeeded" &&
-        newPrediction.status !== "failed"
-      ) {
+      while (newPrediction.status !== "succeeded" && newPrediction.status !== "failed") {
         await sleep(1000);
-        const response = await fetch("/api/predictions/" + newPrediction.id);
-        newPrediction = await response.json();
-        if (response.status !== 200) {
-          handleApiErrors(newPrediction, router);
+        const getResponse = await fetch("/api/predictions/" + newPrediction.id);
+        newPrediction = await getResponse.json();
+        if (getResponse.status !== 200) {
+          await handleApiErrors({ response: getResponse, newPrediction, router });
           setError(newPrediction.detail);
           return;
         }
@@ -228,11 +190,11 @@ export default function EnhancedWorker() {
       }
 
       if (newPrediction.status === "succeeded") {
-        toast.success("Image generated successfully!");
+        toast.success("Image generated successfully");
         fetchUserSubscriptionInfo();
       }
-    } catch (error) {
-      console.error("Generation error:", error);
+    } catch (err) {
+      console.error("Generation error:", err);
       toast.error("Failed to generate image");
     } finally {
       setGenerating(false);
@@ -240,39 +202,47 @@ export default function EnhancedWorker() {
   };
 
   return (
-    <div className="flex flex-col w-full max-w-7xl gap-8">
-      {/* Credit Info */}
+    <div className="flex w-full max-w-7xl flex-col gap-10">
       {user && userSubscriptionInfo && (
-        <CreditInfo
-          userSubscriptionInfo={userSubscriptionInfo}
-          isSubscribed={isSubscribed}
-        />
+        <div className="rounded-2xl border border-slate-200 bg-white/80 p-4 shadow-sm">
+          <CreditInfo credit={String(userSubscriptionInfo.remain_count ?? "")} />
+        </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Panel - Input Controls */}
-        <div className="flex flex-col gap-6 bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
+      <div className="grid grid-cols-1 gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="rounded-3xl border border-slate-200 bg-white/85 p-6 shadow-lg md:p-8">
+          <div className="mb-6 flex items-center justify-between">
+            <h3 className="text-xl font-bold text-slate-900">Generator Controls</h3>
+            <span className="rounded-full bg-slate-900 px-3 py-1 text-xs font-bold uppercase tracking-[0.1em] text-white">
+              {selectedModel.credit} credit
+            </span>
+          </div>
+
           <div>
-            <h3 className="text-lg font-semibold mb-2">Your Prompt</h3>
+            <label className="mb-2 block text-sm font-semibold text-slate-700">Prompt</label>
             <Textarea
-              placeholder="Describe the image you want to generate... e.g., Wong Kar-wai film style, a lonely man smoking a cigarette in a narrow Hong Kong hallway, 1990s..."
+              placeholder="Describe the image you want to generate..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               minRows={4}
               className="w-full"
+              classNames={{ input: "text-base", inputWrapper: "rounded-xl border-2 border-slate-200" }}
             />
           </div>
 
-          {/* Model Selection */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2">AI Model</h3>
+          <div className="mt-6">
+            <label className="mb-2 block text-sm font-semibold text-slate-700">AI Model</label>
             <div className="flex flex-wrap gap-2">
               {AI_MODELS.map((model) => (
                 <Button
                   key={model.key}
                   size="sm"
-                  variant={selectedModel.key === model.key ? "solid" : "bordered"}
-                  color={selectedModel.key === model.key ? "primary" : "default"}
+                  className={cn(
+                    "rounded-xl font-semibold",
+                    selectedModel.key === model.key
+                      ? "bg-slate-900 text-white"
+                      : "bg-slate-100 text-slate-700"
+                  )}
                   onClick={() => setSelectedModel(model)}
                 >
                   {model.label}
@@ -281,16 +251,19 @@ export default function EnhancedWorker() {
             </div>
           </div>
 
-          {/* Aspect Ratio */}
-          <div>
-            <h3 className="text-lg font-semibold mb-2">Aspect Ratio</h3>
+          <div className="mt-6">
+            <label className="mb-2 block text-sm font-semibold text-slate-700">Aspect Ratio</label>
             <div className="flex flex-wrap gap-2">
               {ASPECT_RATIOS.map((ratio) => (
                 <Button
                   key={ratio.key}
                   size="sm"
-                  variant={aspectRatio.key === ratio.key ? "solid" : "bordered"}
-                  color={aspectRatio.key === ratio.key ? "primary" : "default"}
+                  className={cn(
+                    "min-w-[60px] rounded-lg font-semibold",
+                    aspectRatio.key === ratio.key
+                      ? "bg-cyan-600 text-white"
+                      : "bg-slate-100 text-slate-700"
+                  )}
                   onClick={() => setAspectRatio(ratio)}
                 >
                   {ratio.label}
@@ -299,10 +272,9 @@ export default function EnhancedWorker() {
             </div>
           </div>
 
-          {/* Advanced Settings */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label className="text-sm font-medium mb-1 block">Seed</label>
+              <label className="mb-1 block text-sm font-medium text-slate-700">Seed</label>
               <div className="flex gap-2">
                 <Input
                   type="number"
@@ -311,23 +283,14 @@ export default function EnhancedWorker() {
                   placeholder="-1"
                   size="sm"
                 />
-                <Button
-                  size="sm"
-                  variant="bordered"
-                  onClick={generateRandomSeed}
-                  isIconOnly
-                >
-                  🎲
+                <Button size="sm" variant="bordered" onClick={generateRandomSeed} isIconOnly>
+                  <Icon icon="solar:refresh-line-duotone" width={16} />
                 </Button>
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium mb-1 block">Output Format</label>
-              <Select
-                size="sm"
-                selectedKeys={[outputFormat]}
-                onChange={(e) => setOutputFormat(e.target.value)}
-              >
+              <label className="mb-1 block text-sm font-medium text-slate-700">Format</label>
+              <Select size="sm" selectedKeys={[outputFormat]} onChange={(e) => setOutputFormat(e.target.value)}>
                 <SelectItem key="jpeg" value="jpeg">JPEG</SelectItem>
                 <SelectItem key="png" value="png">PNG</SelectItem>
                 <SelectItem key="webp" value="webp">WebP</SelectItem>
@@ -335,56 +298,51 @@ export default function EnhancedWorker() {
             </div>
           </div>
 
-          {/* Generate Button */}
           <Button
-            color="primary"
             size="lg"
             onClick={handleGenerate}
             isLoading={generating}
             disabled={!user || generating}
-            className="w-full font-semibold"
+            className="mt-8 h-14 w-full rounded-2xl bg-slate-900 text-base font-bold text-white"
           >
-            {generating ? "Generating..." : "🎨 Generate Image"}
+            {generating ? "Generating..." : "Generate Image"}
           </Button>
 
           {!user && (
             <Button
-              color="warning"
               size="lg"
               onClick={() => router.push("/api/auth/signin")}
-              className="w-full font-semibold"
+              className="mt-3 h-14 w-full rounded-2xl bg-cyan-600 text-base font-bold text-white"
             >
-              💳 Sign In to Generate
+              Sign In to Generate
             </Button>
           )}
         </div>
 
-        {/* Right Panel - Output */}
-        <div className="flex flex-col gap-6">
-          <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-            <Output
-              prediction={prediction}
-              error={error}
-              defaultImage="/resources/text-to-image.jpg"
-            />
-          </div>
+        <div className="rounded-3xl border border-slate-200 bg-white/85 p-6 shadow-lg">
+          <Output prediction={prediction} error={error} defaultImage="/resources/text-to-image.jpg" />
         </div>
       </div>
 
-      {/* Prompt Inspirations */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold">✨ Prompt Inspirations</h3>
+      <div className="rounded-3xl border border-slate-200 bg-white/80 p-6 shadow-sm">
+        <div className="mb-5 flex items-center gap-2">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-100 text-cyan-700">
+            <Icon icon="solar:lightbulb-line-duotone" width={18} />
+          </span>
+          <h3 className="text-xl font-bold text-slate-900">Prompt Inspirations</h3>
         </div>
 
-        {/* Category Tabs */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="mb-5 flex flex-wrap gap-2">
           {PROMPT_CATEGORIES.map((category) => (
             <Button
               key={category.key}
               size="sm"
-              variant={activeCategory === category.key ? "solid" : "bordered"}
-              color={activeCategory === category.key ? "primary" : "default"}
+              className={cn(
+                "rounded-full px-4 font-semibold",
+                activeCategory === category.key
+                  ? "bg-slate-900 text-white"
+                  : "bg-slate-100 text-slate-700"
+              )}
               onClick={() => setActiveCategory(category.key)}
             >
               {category.label}
@@ -392,13 +350,12 @@ export default function EnhancedWorker() {
           ))}
         </div>
 
-        {/* Prompt Examples */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {PROMPT_INSPIRATIONS[activeCategory]?.map((promptText, index) => (
             <button
               key={index}
-              onClick={() => handlePromptClick(promptText)}
-              className="text-left p-4 rounded-lg border border-gray-200 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 text-sm"
+              onClick={() => setPrompt(promptText)}
+              className="rounded-2xl border border-slate-200 bg-white px-4 py-4 text-left text-sm leading-6 text-slate-700 transition hover:-translate-y-1 hover:shadow-md"
             >
               {promptText}
             </button>

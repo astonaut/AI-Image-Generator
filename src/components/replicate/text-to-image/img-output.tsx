@@ -1,5 +1,4 @@
-import { Button } from "@nextui-org/react";
-import { CircularProgress } from "@nextui-org/react";
+﻿import { Button, CircularProgress } from "@nextui-org/react";
 import { useTranslations } from "next-intl";
 
 export default function Output({
@@ -8,78 +7,53 @@ export default function Output({
   defaultImage,
   showImage,
 }: {
-  error: string;
+  error: string | null;
   prediction: any;
   defaultImage: string;
-  showImage: string | null;
+  showImage?: string | null;
 }) {
   const t = useTranslations("PhotoToCartoon.generator");
+
+  const finalImage =
+    showImage ||
+    (Array.isArray(prediction?.output) && prediction.output.length > 1
+      ? prediction.output[1]
+      : prediction?.output);
+
   return (
-    <div className="flex flex-col w-full md:w-1/2 px-4 mt-8 md:mt-0">
+    <div className="flex min-h-[420px] w-full flex-col">
       {error && error !== "" && (
-        <div className="flex justify-center items-center text-red-500 mb-4">
-          {error}
-        </div>
+        <div className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{error}</div>
       )}
-      <div className="flex-1 flex items-center justify-center">
+
+      <div className="flex flex-1 items-center justify-center rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
         {prediction ? (
-          <>
-            {prediction.output ? (
-              <div className="flex justify-center items-center relative group rounded-lg">
-                <img
-                  src={
-                    showImage
-                      ? showImage
-                      : Array.isArray(prediction.output) &&
-                        prediction.output.length > 1
-                      ? prediction.output[1]
-                      : prediction.output
-                  }
-                  alt="Result"
-                  className="object-contain max-w-full max-h-[420px] rounded-lg"
-                />
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    className="bg-black text-white"
-                    onClick={() => {
-                      const link = document.createElement("a");
-                      link.href = showImage
-                        ? showImage
-                        : Array.isArray(prediction.output) &&
-                          prediction.output.length > 1
-                        ? prediction.output[1]
-                        : prediction.output;
-                      link.setAttribute("download", "");
-                      link.setAttribute("target", "_blank");
-                      link.click();
-                    }}
-                  >
-                    {t("output.downloadButton")}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full w-full bg-gray-200 border-2 border-dashed animate-pulse rounded-lg">
-                <CircularProgress
-                  color="primary"
-                  aria-label="Loading..."
-                  classNames={{
-                    svg: "text-black",
+          finalImage ? (
+            <div className="group relative w-full overflow-hidden rounded-2xl">
+              <img src={finalImage} alt="Result" className="max-h-[420px] w-full rounded-2xl object-contain" />
+              <div className="absolute inset-0 flex items-center justify-center bg-slate-950/35 opacity-0 transition-opacity group-hover:opacity-100">
+                <Button
+                  className="bg-white text-slate-900"
+                  onClick={() => {
+                    const link = document.createElement("a");
+                    link.href = finalImage;
+                    link.setAttribute("download", "");
+                    link.setAttribute("target", "_blank");
+                    link.click();
                   }}
-                />
-                <span className="text-black font-semibold">
-                  {prediction.status}
-                </span>
+                >
+                  {t("output.downloadButton")}
+                </Button>
               </div>
-            )}
-          </>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 text-slate-600">
+              <CircularProgress color="primary" aria-label="Loading..." />
+              <span className="text-sm font-semibold uppercase tracking-wide">{prediction.status}</span>
+            </div>
+          )
         ) : (
-          <div className="flex items-center justify-center w-full h-full border-2 border-dashed rounded-lg">
-            <img
-              src={defaultImage}
-              className="object-contain max-w-full max-h-[420px] rounded-lg py-6"
-            />
-          </div>
+          <img src={defaultImage} className="max-h-[420px] w-full rounded-2xl object-cover" alt="Default" />
         )}
       </div>
     </div>

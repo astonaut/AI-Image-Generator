@@ -1,140 +1,66 @@
-import React from "react";
-import { Divider, Link } from "@nextui-org/react";
+﻿import React from "react";
+import { Link } from "@nextui-org/react";
 import { Icon } from "@iconify/react";
 import { useTranslations } from "next-intl";
 import { getDomain } from "@/config/domain";
 
 export default function Footer({ locale }: { locale: string }) {
   const t = useTranslations("Footer");
-
   const domain = getDomain();
 
-  const footerNavigation = {
-    supportOptions: [
-      {
-        name: t("recommend.item.item1"),
-        href: `${domain}/${locale}`,
-      },
-    ],
-    multiLanguage: [{ name: "English", href: domain }],
+  const legalLinks = [
+    { name: t("legal.item.item1"), href: "/legal/privacy-policy" },
+    { name: t("legal.item.item2"), href: "/legal/terms-of-service" },
+  ];
 
-    legal: [
-      { name: t("legal.item.item1"), href: "/legal/privacy-policy" },
-      { name: t("legal.item.item2"), href: "/legal/terms-of-service" },
-      { name: "Partners", href: "/partners" },
-    ],
-    social: [
-      {
-        name: "Facebook",
-        href: "#",
-        icon: "fontisto:facebook",
-      },
-      {
-        name: "Instagram",
-        href: "#",
-        icon: "fontisto:instagram",
-      },
-      {
-        name: "Twitter",
-        href: "#",
-        icon: "fontisto:twitter",
-      },
-      {
-        name: "GitHub",
-        href: "#",
-        icon: "fontisto:github",
-      },
-    ],
-  };
   return (
-    <footer className="flex w-full flex-col items-center text-black">
-      <div className="max-w-7xl w-full px-6 pb-8 pt-16 sm:pt-24 lg:px-8 lg:pt-24 text-black mx-auto">
-        <div className="xl:grid xl:grid-cols-3 xl:gap-8">
-          <div className="space-y-8 md:pr-8">
-            <div className="flex items-center justify-center xl:justify-start">
-              <img
-                src="/logo.jpeg"
-                alt="AI Video Generator"
-                className="w-8 h-8 mr-2"
-                loading="lazy"
-              />
-              <span className="text-medium font-medium">
-                AI Video Generator
-              </span>
+    <footer className="relative mt-20 border-t border-slate-200/80 bg-white/75 backdrop-blur-xl">
+      <div className="mx-auto grid w-full max-w-7xl gap-10 px-6 py-14 md:grid-cols-4">
+        <div className="md:col-span-2">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 overflow-hidden rounded-xl border border-slate-200">
+              <img src="/logo.jpeg" alt="AI Image Studio" className="h-full w-full object-cover" loading="lazy" />
             </div>
-            <p className="text-small text-black text-center xl:text-left">
-              {t("description")}
-            </p>
-          </div>
-          <div className="mt-16 grid grid-cols-1 gap-8 xl:col-span-2 xl:mt-0">
-            <div className="md:grid md:grid-cols-4 md:gap-8">
-              <div className="mt-10 md:mt-0">
-                <p className="text-small font-semibold text-center xl:text-left text-black">
-                  {t("recommend.title")}
-                </p>
-                <ul className="mt-6 space-y-4">
-                  {footerNavigation.supportOptions.map((item) => (
-                    <li key={item.name} className="text-center xl:text-left">
-                      <Link className="text-black" href={item.href} size="sm">
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-10 md:mt-0">
-                <p className="text-small font-semibold text-center xl:text-left text-black">
-                  {t("multiLanguage.title")}
-                </p>
-                <ul className="mt-6 space-y-4">
-                  {footerNavigation.multiLanguage.map((item) => (
-                    <li key={item.name} className="text-center xl:text-left">
-                      <Link className="text-black" href={item.href} size="sm">
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-10 md:mt-0">
-                <p className="text-small font-semibold text-center xl:text-left text-black">
-                  {t("legal.title")}
-                </p>
-                <ul className="mt-6 space-y-4">
-                  {footerNavigation.legal.map((item) => (
-                    <li key={item.name} className="text-center xl:text-left">
-                      <Link className="text-black" href={item.href} size="sm">
-                        {item.name}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="mt-10 md:mt-0">
-                <p className="text-small font-semibold text-center xl:text-left text-black">
-                  {t("contact.title")}
-                </p>
-                <ul className="mt-6 space-y-4">
-                  <li className="text-center xl:text-left">
-                    <Link
-                      href={`mailto:support@${domain.replace("https://", "")}`}
-                      className="text-black text-sm"
-                    >
-                      <Icon icon="mdi:email" className="text-black" /> :
-                      support@{domain.replace("https://", "")}
-                    </Link>
-                  </li>
-                </ul>
-              </div>
+            <div>
+              <p className="font-display text-xl font-bold text-slate-900">AI Image Studio</p>
+              <p className="text-xs uppercase tracking-[0.18em] text-slate-500">minimalist generator</p>
             </div>
           </div>
+          <p className="mt-5 max-w-xl text-sm leading-7 text-slate-600">{t("description")}</p>
         </div>
-        <Divider className="mt-16 sm:mt-20 lg:mt-24" />
-        <div className="flex justify-center pt-8">
-          <p className="text-small text-black">
-            &copy; 2025 AI Video Generator. All rights reserved.
-          </p>
+
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{t("recommend.title")}</p>
+          <div className="mt-4 space-y-2">
+            <Link className="text-slate-700" href={`${domain}/${locale}`}>
+              {t("recommend.item.item1")}
+            </Link>
+            <Link className="text-slate-700" href={`${domain}`}>
+              English
+            </Link>
+          </div>
         </div>
+
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-500">{t("legal.title")}</p>
+          <div className="mt-4 space-y-2">
+            {legalLinks.map((item) => (
+              <Link key={item.name} className="text-slate-700" href={item.href}>
+                {item.name}
+              </Link>
+            ))}
+            <a
+              href={`mailto:support@${domain.replace("https://", "")}`}
+              className="flex items-center gap-2 text-slate-700"
+            >
+              <Icon icon="mdi:email-outline" width={18} />
+              support@{domain.replace("https://", "")}
+            </a>
+          </div>
+        </div>
+      </div>
+      <div className="border-t border-slate-200/80 py-5 text-center text-xs text-slate-500">
+        © 2026 AI Image Studio. All rights reserved.
       </div>
     </footer>
   );

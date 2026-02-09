@@ -1,4 +1,5 @@
-"use client";
+﻿"use client";
+
 import { useTranslations } from "next-intl";
 import React, { useState } from "react";
 
@@ -10,50 +11,44 @@ export default function UserExample(params: {
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   return (
-    <div className="flex flex-col w-full items-center max-w-7xl space-y-8 px-4">
-      <h2 className="text-3xl md:text-4xl mb-6 sm:mb-10 font-extrabold text-blue-700 text-center">
-        {t("userExample.title")}
-      </h2>
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 md:gap-12">
+    <section className="mx-auto w-full max-w-7xl px-4">
+      <div className="mb-10 text-center animate-fade-in">
+        <h2 className="text-3xl font-extrabold text-slate-900 md:text-5xl">
+          {t("userExample.title")}
+        </h2>
+        <p className="mx-auto mt-3 max-w-2xl text-slate-600">{t("userExample.description")}</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {params.images?.map((src, index) => (
-          <div key={index} onClick={() => setSelectedVideo(src.video)}>
-            <div className="relative cursor-pointer hover:scale-105 transition-all duration-300 shadow-lg">
-              <img
-                src={src.img}
-                alt={t("userExample.title")}
-                className="w-full h-full max-h-[205px] object-cover rounded-lg cursor-pointer shadow-lg"
-                loading="lazy"
-              />
-              {src.video && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white rounded-full flex items-center justify-center">
-                    <svg
-                      className="w-6 h-6 sm:w-8 sm:h-8 text-black"
-                      fill="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M8 5v14l11-7z" />
-                    </svg>
-                  </div>
-                </div>
-              )}
+          <button
+            key={index}
+            onClick={() => setSelectedVideo(src.video)}
+            className="group relative overflow-hidden rounded-3xl border border-slate-200/80 bg-white/70 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+          >
+            <img
+              src={src.img}
+              alt={t("userExample.title")}
+              className="h-56 w-full object-cover transition duration-500 group-hover:scale-105"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent" />
+            <div className="absolute bottom-4 left-4 inline-flex items-center gap-2 rounded-full bg-white/85 px-3 py-2 text-xs font-bold uppercase tracking-[0.1em] text-slate-800">
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 text-white">▶</span>
+              Play sample
             </div>
-          </div>
+          </button>
         ))}
       </div>
+
       {selectedVideo && (
-        <div className="fixed flex inset-0 z-50 items-center justify-center bg-black bg-opacity-50">
-          <div className="relative bg-white p-4 rounded-lg max-w-full sm:max-w-md">
-            <video
-              src={selectedVideo}
-              controls
-              autoPlay
-              className="w-full h-auto rounded-lg"
-            />
-            <div className="flex justify-end mt-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-3xl overflow-hidden rounded-3xl bg-white p-4 shadow-2xl">
+            <video src={selectedVideo} controls autoPlay className="w-full rounded-2xl" />
+            <div className="mt-4 flex justify-end">
               <button
                 onClick={() => setSelectedVideo(null)}
-                className="px-4 sm:px-6 py-2 bg-indigo-700 text-white rounded-lg"
+                className="rounded-xl bg-slate-900 px-5 py-2 font-semibold text-white"
               >
                 Close
               </button>
@@ -61,6 +56,6 @@ export default function UserExample(params: {
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 }

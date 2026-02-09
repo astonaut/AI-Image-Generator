@@ -1,7 +1,6 @@
-"use client";
+﻿"use client";
 
 import type { NavbarProps } from "@nextui-org/react";
-
 import React from "react";
 import {
   Navbar,
@@ -15,15 +14,13 @@ import {
   cn,
 } from "@nextui-org/react";
 import Locales from "../../locales";
-import { useLocale } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import LoginButton from "@/components/button/login-button";
 import UserButton from "../../button/user-button";
 import { useAppContext } from "@/contexts/app";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { usePathname, useRouter } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { Icon } from "@iconify/react/dist/iconify.js";
+import { usePathname } from "next/navigation";
 
 const BasicNavbar = React.forwardRef<HTMLElement, NavbarProps>(
   ({ classNames = {}, ...props }, ref) => {
@@ -36,7 +33,7 @@ const BasicNavbar = React.forwardRef<HTMLElement, NavbarProps>(
     const t = useTranslations("Nav");
 
     useEffect(() => {
-      if (session && session.user) {
+      if (session?.user) {
         setUser(session.user);
       }
       if (pathname.endsWith("/")) {
@@ -45,100 +42,84 @@ const BasicNavbar = React.forwardRef<HTMLElement, NavbarProps>(
         setActiveTag("text-to-image");
       } else if (pathname.includes("pricing")) {
         setActiveTag("pricing");
-      } else if (pathname.includes("#features")) {
-        setActiveTag("features");
       }
     }, [pathname, session, setUser]);
 
-    const handleTagClick = (tag: string) => {
-      setActiveTag(tag);
-      setIsMenuOpen(false); // Close menu after clicking
-    };
+    const items = [
+      { tag: "features", href: `/${locale}/#features`, label: t("features") },
+      {
+        tag: "text-to-image",
+        href: `/${locale}/text-to-image`,
+        label: t("text-to-image"),
+      },
+      { tag: "pricing", href: `/${locale}/pricing`, label: t("pricing") },
+    ];
 
     return (
       <Navbar
         ref={ref}
         {...props}
         classNames={{
-          base: cn("border-default-100 bg-transparent text-black"),
+          base: cn("bg-transparent py-2"),
           wrapper:
-            "w-full max-w-7xl lg:px-0 justify-center md:h-[100px] h-[70px]",
-          item: "md:flex", // Removed hidden to show on mobile
+            "w-full max-w-7xl lg:px-0 h-[74px] rounded-2xl glass border border-white/60 shadow-lg",
+          item: "md:flex",
           ...classNames,
         }}
-        // height="100px"
         isMenuOpen={isMenuOpen}
         onMenuOpenChange={setIsMenuOpen}
+        isBordered={false}
       >
         <NavbarBrand>
-          <Link href={`/${locale}`} className="flex items-center gap-2">
-            <img
-              src="/logo.jpeg"
-              alt="logo"
-              className="w-9 h-9 md:w-11 md:h-11 mr-2 mb-1 ml-1"
-              loading="lazy"
-            />
-            <p className="text-xl md:text-2xl font-bold hidden lg:block text-blue-700">
-              AI Image Generator
-            </p>
+          <Link href={`/${locale}`} className="flex items-center gap-3 group">
+            <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl border border-white/80 bg-white/80 shadow-md transition-transform duration-300 group-hover:scale-105">
+              <img
+                src="/logo.jpeg"
+                alt="logo"
+                className="h-full w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+            <div className="hidden md:block">
+              <p className="font-display text-xl font-bold text-slate-900">
+                AI Image Studio
+              </p>
+              <p className="text-[11px] uppercase tracking-[0.2em] text-slate-500">
+                cinematic generator
+              </p>
+            </div>
           </Link>
         </NavbarBrand>
 
-        <NavbarContent className="hidden md:flex" justify="center">
-          <NavbarItem onClick={() => handleTagClick("features")}>
-            <Link
-              className={cn(
-                "text-black mx-3 hover:text-blue-600 transition-colors",
-                activeTag === "features" ? "text-blue-600 font-semibold" : ""
-              )}
-              href={`/${locale}/#features`}
-              size="md"
-            >
-              {t("features")}
-            </Link>
-          </NavbarItem>
-          <NavbarItem onClick={() => handleTagClick("text-to-image")}>
-            <Link
-              className={cn(
-                "text-black mx-3 hover:text-blue-600 transition-colors",
-                activeTag === "text-to-image" ? "text-blue-600 font-semibold" : ""
-              )}
-              href={`/${locale}/text-to-image`}
-              size="md"
-            >
-              {t("text-to-image")}
-            </Link>
-          </NavbarItem>
-          <NavbarItem onClick={() => handleTagClick("pricing")}>
-            <Link
-              className={cn(
-                "text-black mx-3 hover:text-blue-600 transition-colors",
-                activeTag === "pricing" ? "text-blue-600 font-semibold" : ""
-              )}
-              href={`/${locale}/pricing`}
-              size="md"
-            >
-              {t("pricing")}
-            </Link>
-          </NavbarItem>
+        <NavbarContent className="hidden md:flex gap-2" justify="center">
+          {items.map((item) => (
+            <NavbarItem key={item.tag} onClick={() => setActiveTag(item.tag)}>
+              <Link
+                className={cn(
+                  "rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200",
+                  activeTag === item.tag
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-700 hover:bg-white/70"
+                )}
+                href={item.href}
+                size="md"
+              >
+                {item.label}
+              </Link>
+            </NavbarItem>
+          ))}
         </NavbarContent>
 
-        <NavbarContent
-          className="hidden md:flex justify-center items-center"
-          justify="end"
-        >
+        <NavbarContent className="hidden md:flex items-center" justify="end">
           <Locales />
           {user ? (
-            <div className="flex flex-row gap-2">
-              <button className="flex justify-center items-center gap-3 mr-6 hover:scale-110 transition-all duration-300">
-                <a href={`/${locale}/dashboard`}>
-                  My creations
-                  {/* <Icon
-                    icon="lucide:settings-2"
-                    className="w-[1.3em] h-[1.3em] text-black"
-                  /> */}
-                </a>
-              </button>
+            <div className="ml-3 flex items-center gap-3">
+              <a
+                href={`/${locale}/dashboard`}
+                className="rounded-full border border-slate-300/70 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-800 transition hover:border-slate-400 hover:bg-white"
+              >
+                My creations
+              </a>
               <UserButton />
             </div>
           ) : (
@@ -146,67 +127,40 @@ const BasicNavbar = React.forwardRef<HTMLElement, NavbarProps>(
           )}
         </NavbarContent>
 
-        <NavbarMenuToggle className="text-black md:hidden" />
+        <NavbarMenuToggle className="text-slate-900 md:hidden" />
 
-        <NavbarMenu
-          className="top-[calc(var(--navbar-height)_-_1px)] max-h-fit bg-white pb-6 pt-6 shadow-medium backdrop-blur-md backdrop-saturate-150 text-black mx-1"
-          motionProps={{
-            initial: { opacity: 0, y: -20 },
-            animate: { opacity: 1, y: 0 },
-            exit: { opacity: 0, y: -20 },
-            transition: {
-              ease: "easeInOut",
-              duration: 0.2,
-            },
-          }}
-        >
-          <div className="flex flex-col w-full px-6">
-            {[
-              { tag: "home", path: "" },
-              { tag: "features", path: "#features" },
-              { tag: "text-to-image", path: "text-to-image" },
-              { tag: "pricing", path: "pricing" },
-            ].map(({ tag, path }) => (
-              <NavbarMenuItem
-                key={tag}
-                className="w-full"
-                onClick={() => {
-                  setIsMenuOpen(false);
-                  handleTagClick(tag);
-                }}
+        <NavbarMenu className="top-[84px] mx-2 rounded-2xl border border-white/60 bg-white/90 px-4 pb-6 pt-4 shadow-xl backdrop-blur-xl">
+          {items.map((item) => (
+            <NavbarMenuItem
+              key={item.tag}
+              className="w-full"
+              onClick={() => {
+                setIsMenuOpen(false);
+                setActiveTag(item.tag);
+              }}
+            >
+              <Link
+                className={cn(
+                  "w-full rounded-xl px-4 py-3 text-base font-semibold",
+                  activeTag === item.tag
+                    ? "bg-slate-900 text-white"
+                    : "text-slate-900 hover:bg-slate-100"
+                )}
+                href={item.href}
               >
-                <Link
-                  className={cn(
-                    "text-black",
-                    activeTag === tag ? "text-black font-bold" : ""
-                  )}
-                  href={`/${locale}/${path}`}
-                  size="lg"
-                  onClick={() => {
-                    setIsMenuOpen(false);
-                    handleTagClick(tag);
-                  }}
-                >
-                  {t(tag)}
-                </Link>
-              </NavbarMenuItem>
-            ))}
-
-            <div className="flex flex-row gap-2">
-              <button className="flex justify-center items-center gap-3 mr-6 hover:scale-110 transition-all duration-300 pt-2">
-                <a href={`/${locale}/dashboard`}>
-                  My creations
-                  {/* <Icon
-                    icon="lucide:settings-2"
-                    className="w-[1.3em] h-[1.3em] text-black"
-                  /> */}
-                </a>
-              </button>
-            </div>
-            <div className="flex flex-col gap-2 mt-4">
-              <div>{user ? <UserButton /> : <LoginButton />}</div>
-            </div>
-          </div>
+                {item.label}
+              </Link>
+            </NavbarMenuItem>
+          ))}
+          <NavbarMenuItem className="mt-2">
+            <a
+              href={`/${locale}/dashboard`}
+              className="block w-full rounded-xl bg-slate-100 px-4 py-3 text-base font-semibold text-slate-900"
+            >
+              My creations
+            </a>
+          </NavbarMenuItem>
+          <div className="mt-3">{user ? <UserButton /> : <LoginButton />}</div>
         </NavbarMenu>
       </Navbar>
     );
