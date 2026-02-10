@@ -1,5 +1,11 @@
 import { PaymentHistory } from "../type/type";
-import { create, update, getById, hasSuccessfulPaymentByUserId } from "../models/payment_history";
+import {
+  create,
+  update,
+  getById,
+  hasSuccessfulPaymentByUserId,
+  markSuccessIfNotYet,
+} from "../models/payment_history";
 
 export async function createPaymentHistory(paymentHistory: PaymentHistory) {
   return await create(paymentHistory);
@@ -11,6 +17,10 @@ export async function updatePaymentHistory(paymentHistory: PaymentHistory) {
 
 export async function getPaymentHistoryById(id: string) {
   return await getById(id);
+}
+
+export async function markPaymentHistorySuccessIfNotYet(paymentHistory: PaymentHistory) {
+  return await markSuccessIfNotYet(paymentHistory);
 }
 
 export async function checkUserHasSuccessfulPayment(user_id: string) {

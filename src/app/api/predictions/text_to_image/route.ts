@@ -6,6 +6,7 @@ import { generateCheck } from "@/backend/service/generate-_check";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import { ResponseCodeEnum } from "@/backend/type/enum/response_code_enum";
+import { restoreCreditByUserId } from "@/backend/service/credit_usage";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -65,28 +66,33 @@ export async function POST(request: Request) {
 
   const prediction = await replicate.predictions.create(options as any);
   if (prediction?.error) {
+    await restoreCreditByUserId(user_id, Number(credit) || 0);
     return NextResponse.json({ detail: prediction.error }, { status: 500 });
   }
 
   const resultId = genEffectResultId();
-  createEffectResult({
-    result_id: resultId,
-    user_id: user_id,
-    original_id: prediction.id,
-    effect_id: 0,
-    effect_name: effect_link_name,
-    prompt: prompt,
-    url: "",
-    status: "pending",
-    original_url: "",
-    storage_type: "S3",
-    running_time: -1,
-    credit: credit,
-    request_params: JSON.stringify(requestBody),
-    created_at: new Date()
-  }).catch(error => {
+  try {
+    await createEffectResult({
+      result_id: resultId,
+      user_id: user_id,
+      original_id: prediction.id,
+      effect_id: 0,
+      effect_name: effect_link_name,
+      prompt: prompt,
+      url: "",
+      status: "pending",
+      original_url: "",
+      storage_type: "S3",
+      running_time: -1,
+      credit: Number(credit) || 0,
+      request_params: JSON.stringify(requestBody),
+      created_at: new Date(),
+    });
+  } catch (error) {
+    await restoreCreditByUserId(user_id, Number(credit) || 0);
     console.error("Failed to create effect result:", error);
-  });
+    return NextResponse.json({ detail: "Failed to create effect result" }, { status: 500 });
+  }
 
   return NextResponse.json(prediction, { status: 201 });
 }

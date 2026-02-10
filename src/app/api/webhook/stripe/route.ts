@@ -1,4 +1,5 @@
-import Stripe from "stripe";
+﻿import Stripe from "stripe";
+import { getDb } from "@/backend/config/db";
 import {
   createUserSubscription,
   updateUserSubscription,
@@ -9,20 +10,38 @@ import {
   getCreditUsageByUserId,
   updateCreditUsage,
 } from "@/backend/service/credit_usage";
-import {
-  CreditUsage,
-  PaymentHistory,
-  UserSubscription,
-} from "@/backend/type/type";
+import { CreditUsage, PaymentHistory, UserSubscription } from "@/backend/type/type";
 import {
   getPaymentHistoryById,
-  updatePaymentHistory,
-  createPaymentHistory,
+  markPaymentHistorySuccessIfNotYet,
 } from "@/backend/service/payment_history";
 import { UserSubscriptionStatusEnum } from "@/backend/type/enum/user_subscription_enum";
-const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY!);
 
+const stripe = new Stripe(process.env.STRIPE_PRIVATE_KEY!);
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+
+async function acquireStripeEventLock(eventId: string, eventType: string): Promise<boolean> {
+  const db = getDb();
+
+  await db.query(`
+    CREATE TABLE IF NOT EXISTS stripe_event_log (
+      id SERIAL PRIMARY KEY,
+      event_id TEXT NOT NULL UNIQUE,
+      event_type TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  const res = await db.query(
+    `INSERT INTO stripe_event_log (event_id, event_type)
+     VALUES ($1, $2)
+     ON CONFLICT (event_id) DO NOTHING
+     RETURNING id`,
+    [eventId, eventType]
+  );
+
+  return Array.isArray(res.rows) && res.rows.length > 0;
+}
 
 export async function POST(req: Request) {
   const body = await req.text();
@@ -33,245 +52,185 @@ export async function POST(req: Request) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: any) {
-    return Response.json(
-      { error: `Webhook Error: ${err.message}` },
-      { status: 400 }
-    );
+    return Response.json({ error: `Webhook Error: ${err.message}` }, { status: 400 });
   }
 
   try {
+    const locked = await acquireStripeEventLock(event.id, event.type);
+    if (!locked) {
+      return Response.json({ received: true, duplicated: true });
+    }
+
     switch (event.type) {
-      case "payment_intent.succeeded":
-        const paymentIntentSucceeded = event.data
-          .object as Stripe.PaymentIntent;
-        console.log("payment_intent.succeeded: ", paymentIntentSucceeded);
+      case "payment_intent.succeeded": {
+        const paymentIntentSucceeded = event.data.object as Stripe.PaymentIntent;
+        console.log("payment_intent.succeeded:", paymentIntentSucceeded.id);
         break;
+      }
 
-      case "customer.subscription.created":
+      case "customer.subscription.created": {
         const subscription = event.data.object as Stripe.Subscription;
-        console.log(
-          "customer.subscription.created, stripe_price_id, stripe_subscription_id, stripe_customer_id: ",
-          subscription.items.data[0].price.id,
-          subscription.id,
-          subscription.customer.toString()
-        );
+        console.log("customer.subscription.created:", subscription.id);
         break;
+      }
 
-      // 一次性购买
-      case "checkout.session.completed":
-        console.log("checkout.session.completed");
-        const checkoutSessionCompleted = event.data
-          .object as Stripe.Checkout.Session;
-        if (
-          checkoutSessionCompleted.metadata?.project !== "ai-video-generator"
-        ) {
-          console.log("checkout.session.completed, project not match, return");
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+
+        if (session.metadata?.project !== "ai-video-generator") {
           return Response.json({ received: true });
         }
 
-        const currentDate_1 = new Date();
-        let newPeriodEnd = new Date(currentDate_1);
-        newPeriodEnd.setMonth(currentDate_1.getMonth() + 1);
         if (
-          checkoutSessionCompleted.metadata?.subscriptionPlanId !== "1" &&
-          checkoutSessionCompleted.metadata?.subscriptionPlanId !== "9" &&
-          checkoutSessionCompleted.metadata?.subscriptionPlanId !== "11"
+          session.metadata?.subscriptionPlanId !== "1" &&
+          session.metadata?.subscriptionPlanId !== "9" &&
+          session.metadata?.subscriptionPlanId !== "11"
         ) {
           return Response.json({ received: true });
         }
-        let credit_usage_from_db_1: CreditUsage = await getCreditUsageByUserId(
-          checkoutSessionCompleted.metadata.userId
-        );
-        if (
-          credit_usage_from_db_1.period_end &&
-          credit_usage_from_db_1.period_end > newPeriodEnd
-        ) {
-          newPeriodEnd = new Date(credit_usage_from_db_1.period_end);
+
+        const currentDate = new Date();
+        let newPeriodEnd = new Date(currentDate);
+        newPeriodEnd.setMonth(currentDate.getMonth() + 1);
+
+        let creditUsage: CreditUsage = await getCreditUsageByUserId(session.metadata.userId);
+        if (creditUsage?.period_end && creditUsage.period_end > newPeriodEnd) {
+          newPeriodEnd = new Date(creditUsage.period_end);
         }
-        if (!credit_usage_from_db_1) {
-          const credit_usage_1: CreditUsage = {
-            user_id: checkoutSessionCompleted.metadata.userId,
+
+        if (!creditUsage) {
+          await createCreditUsage({
+            user_id: session.metadata.userId,
             user_subscriptions_id: -1,
             is_subscription_active: false,
             used_count: 0,
-            period_remain_count: parseInt(
-              checkoutSessionCompleted.metadata.credit
-            ),
-            period_start: currentDate_1,
+            period_remain_count: parseInt(session.metadata.credit),
+            period_start: currentDate,
             period_end: newPeriodEnd,
             created_at: new Date(),
-          };
-          await createCreditUsage(credit_usage_1);
+          });
         } else {
-          credit_usage_from_db_1.period_remain_count =
-            credit_usage_from_db_1.period_remain_count +
-            parseInt(checkoutSessionCompleted.metadata.credit);
-          // credit_usage_from_db_1.period_start = currentDate_1;
-          credit_usage_from_db_1.period_end = newPeriodEnd;
-          credit_usage_from_db_1.updated_at = new Date();
-          await updateCreditUsage(credit_usage_from_db_1);
+          creditUsage.period_remain_count += parseInt(session.metadata.credit);
+          creditUsage.period_end = newPeriodEnd;
+          creditUsage.updated_at = new Date();
+          await updateCreditUsage(creditUsage);
         }
 
-        // step3: update payment history
-        let paymentHistory_1: PaymentHistory = await getPaymentHistoryById(
-          checkoutSessionCompleted.metadata.paymentHistoryId
-        );
-        paymentHistory_1.stripe_subscription_id = checkoutSessionCompleted.id;
-        paymentHistory_1.stripe_customer_id =
-          checkoutSessionCompleted.customer?.toString() || "";
-        paymentHistory_1.status = "success";
-        await updatePaymentHistory(paymentHistory_1);
+        const paymentHistory: PaymentHistory = await getPaymentHistoryById(session.metadata.paymentHistoryId);
+        if (paymentHistory) {
+          await markPaymentHistorySuccessIfNotYet({
+            ...paymentHistory,
+            stripe_subscription_id: session.id,
+            stripe_customer_id: session.customer?.toString() || "",
+            stripe_price_id: paymentHistory.stripe_price_id || session.metadata.priceId,
+            status: "success",
+          });
+        }
 
         break;
+      }
 
-      // 用户订阅
-      case "customer.subscription.updated":
-        console.log("customer.subscription.updated");
-        const subscriptionUpdated = event.data.object as Stripe.Subscription;
-        if (subscriptionUpdated.metadata?.project !== "ai-video-generator") {
-          console.log(
-            "customer.subscription.updated, project not match, return"
-          );
+      case "customer.subscription.updated": {
+        const subscription = event.data.object as Stripe.Subscription;
+
+        if (subscription.metadata?.project !== "ai-video-generator") {
           return Response.json({ received: true });
         }
-        // 如果订阅用户取消订阅，则不更新积分
-        if (subscriptionUpdated.cancel_at_period_end) {
-          console.log(
-            "customer.subscription.updated, cancel_at_period_end, return"
-          );
+
+        if (subscription.cancel_at_period_end) {
           return Response.json({ received: true });
         }
+
         const currentDate = new Date();
-        const oneMonthLater = new Date(currentDate);
-        const current_period_end = new Date(currentDate);
-        if (subscriptionUpdated.metadata.interval === "year") {
-          current_period_end.setFullYear(currentDate.getFullYear() + 1);
+        const currentPeriodEnd = new Date(currentDate);
+        if (subscription.metadata.interval === "year") {
+          currentPeriodEnd.setFullYear(currentDate.getFullYear() + 1);
         } else {
-          current_period_end.setMonth(currentDate.getMonth() + 1);
+          currentPeriodEnd.setMonth(currentDate.getMonth() + 1);
         }
 
-        const userSubscription = await getUserSubscriptionByUserId(
-          subscriptionUpdated.metadata.userId
-        );
+        const userSubscription = await getUserSubscriptionByUserId(subscription.metadata.userId);
 
-        // step1: create/update user subscription
-        const operateUserSubscriptionParams: UserSubscription = {
-          user_id: subscriptionUpdated.metadata.userId,
-          subscription_plans_id: parseInt(
-            subscriptionUpdated.metadata.subscriptionPlanId
-          ),
-          stripe_price_id: subscriptionUpdated.items.data[0].price.id,
-          stripe_subscription_id: subscriptionUpdated.id,
-          stripe_customer_id: subscriptionUpdated.customer.toString(),
+        const params: UserSubscription = {
+          user_id: subscription.metadata.userId,
+          subscription_plans_id: parseInt(subscription.metadata.subscriptionPlanId),
+          stripe_price_id: subscription.items.data[0].price.id,
+          stripe_subscription_id: subscription.id,
+          stripe_customer_id: subscription.customer.toString(),
           status: UserSubscriptionStatusEnum.ACTIVE,
           current_period_start: currentDate,
-          current_period_end: current_period_end,
+          current_period_end: currentPeriodEnd,
           created_at: new Date(),
         };
 
-        let user_subscriptions: UserSubscription;
+        let userSubscriptions: UserSubscription;
         if (userSubscription) {
-          user_subscriptions = await updateUserSubscription(
-            operateUserSubscriptionParams
-          );
+          userSubscriptions = await updateUserSubscription(params);
         } else {
-          user_subscriptions = await createUserSubscription(
-            operateUserSubscriptionParams
-          );
-          if (!user_subscriptions.id) {
-            throw new Error(
-              "create user_subscriptions failed, subscription id : " +
-                user_subscriptions.id
-            );
+          userSubscriptions = await createUserSubscription(params);
+          if (!userSubscriptions.id) {
+            throw new Error("create user_subscriptions failed");
           }
         }
 
-        // step2: create credit_usage
-        let credit_usage_from_db: CreditUsage = await getCreditUsageByUserId(
-          subscriptionUpdated.metadata.userId
-        );
-        if (!credit_usage_from_db) {
-          const credit_usage: CreditUsage = {
-            user_id: subscriptionUpdated.metadata.userId,
-            user_subscriptions_id: user_subscriptions.id!,
+        let creditUsage: CreditUsage = await getCreditUsageByUserId(subscription.metadata.userId);
+        if (!creditUsage) {
+          await createCreditUsage({
+            user_id: subscription.metadata.userId,
+            user_subscriptions_id: userSubscriptions.id!,
             is_subscription_active: true,
             used_count: 0,
-            period_remain_count: parseInt(subscriptionUpdated.metadata.credit),
+            period_remain_count: parseInt(subscription.metadata.credit),
             period_start: currentDate,
-            period_end: oneMonthLater,
+            period_end: currentPeriodEnd,
             created_at: new Date(),
-          };
-          await createCreditUsage(credit_usage);
+          });
         } else {
-          // 订阅用户续费
-          if (credit_usage_from_db.is_subscription_active === true) {
-            credit_usage_from_db.period_remain_count = parseInt(
-              subscriptionUpdated.metadata.credit
-            );
-            credit_usage_from_db.period_start = currentDate;
-            credit_usage_from_db.period_end = current_period_end;
-            credit_usage_from_db.user_subscriptions_id = user_subscriptions.id!;
-            await updateCreditUsage(credit_usage_from_db);
-          }
-          // 如果用户之前不是订阅用户，且剩余积分大于0且没过期，则需要把之前剩余的积分加上
           if (
-            credit_usage_from_db.period_remain_count > 0 &&
-            credit_usage_from_db.period_end &&
-            credit_usage_from_db.period_end >= currentDate &&
-            credit_usage_from_db.is_subscription_active === false
+            creditUsage.period_remain_count > 0 &&
+            creditUsage.period_end &&
+            creditUsage.period_end >= currentDate &&
+            creditUsage.is_subscription_active === false
           ) {
-            credit_usage_from_db.period_remain_count += parseInt(
-              subscriptionUpdated.metadata.credit
-            );
-            credit_usage_from_db.is_subscription_active = true;
-            credit_usage_from_db.period_start = currentDate;
-            credit_usage_from_db.period_end = current_period_end;
-            credit_usage_from_db.user_subscriptions_id = user_subscriptions.id!;
-            credit_usage_from_db.updated_at = new Date();
-            console.log("credit_usage_from_db", credit_usage_from_db);
-            await updateCreditUsage(credit_usage_from_db);
+            creditUsage.period_remain_count += parseInt(subscription.metadata.credit);
           } else {
-            credit_usage_from_db.period_remain_count = parseInt(
-              subscriptionUpdated.metadata.credit
-            );
-            credit_usage_from_db.is_subscription_active = true;
-            credit_usage_from_db.period_start = currentDate;
-            credit_usage_from_db.period_end = current_period_end;
-            credit_usage_from_db.user_subscriptions_id = user_subscriptions.id!;
-            credit_usage_from_db.updated_at = new Date();
-            await updateCreditUsage(credit_usage_from_db);
+            creditUsage.period_remain_count = parseInt(subscription.metadata.credit);
           }
+
+          creditUsage.is_subscription_active = true;
+          creditUsage.period_start = currentDate;
+          creditUsage.period_end = currentPeriodEnd;
+          creditUsage.user_subscriptions_id = userSubscriptions.id!;
+          creditUsage.updated_at = new Date();
+          await updateCreditUsage(creditUsage);
         }
 
-        // step3: update payment history
-        let paymentHistory: PaymentHistory = await getPaymentHistoryById(
-          subscriptionUpdated.metadata.paymentHistoryId
-        );
-        paymentHistory.stripe_subscription_id = subscriptionUpdated.id;
-        paymentHistory.stripe_customer_id =
-          subscriptionUpdated.customer.toString();
-        paymentHistory.stripe_price_id =
-          subscriptionUpdated.items.data[0].price.id;
-        paymentHistory.status = "success";
-        paymentHistory.user_id = subscriptionUpdated.metadata.userId;
-        paymentHistory.created_at = new Date();
-        await createPaymentHistory(paymentHistory);
-        break;
+        const paymentHistory: PaymentHistory = await getPaymentHistoryById(subscription.metadata.paymentHistoryId);
+        if (paymentHistory) {
+          await markPaymentHistorySuccessIfNotYet({
+            ...paymentHistory,
+            stripe_subscription_id: subscription.id,
+            stripe_customer_id: subscription.customer.toString(),
+            stripe_price_id: subscription.items.data[0].price.id,
+            status: "success",
+          });
+        }
 
-      case "customer.subscription.deleted":
-        const subscriptionDeleted = event.data.object as Stripe.Subscription;
-        console.log("customer.subscription.deleted");
-        const user_id = subscriptionDeleted.metadata.userId;
         break;
+      }
+
+      case "customer.subscription.deleted": {
+        const subscriptionDeleted = event.data.object as Stripe.Subscription;
+        console.log("customer.subscription.deleted:", subscriptionDeleted.id);
+        break;
+      }
+
       default:
         console.log(`Unhandled event type ${event.type}`);
     }
   } catch (error) {
     console.error("Error processing Stripe webhook:", error);
-    return Response.json(
-      { error: "Error processing Stripe webhook" },
-      { status: 500 }
-    );
+    return Response.json({ error: "Error processing Stripe webhook" }, { status: 500 });
   }
 
   return Response.json({ received: true });

@@ -1,4 +1,11 @@
-import { create, getByUserId, reducePeriodRemainCount, update } from "../models/credit_usage";
+import {
+  consumeIfEnough,
+  create,
+  getByUserId,
+  reducePeriodRemainCount,
+  restoreRemainCount,
+  update,
+} from "../models/credit_usage";
 import { CreditUsage } from "../type/type";
 
 export async function createCreditUsage(creditUsage: CreditUsage) {
@@ -42,6 +49,14 @@ export async function getCreditUsageByUserId(user_id: string) {
 
 export async function reducePeriodRemainCountByUserId(user_id: string, credit: number) {
   return await reducePeriodRemainCount(user_id, credit);
+}
+
+export async function consumeCreditByUserId(user_id: string, credit: number) {
+  return await consumeIfEnough(user_id, credit);
+}
+
+export async function restoreCreditByUserId(user_id: string, credit: number) {
+  return await restoreRemainCount(user_id, credit);
 }
 
 export async function updateCreditUsage(creditUsage: CreditUsage) {

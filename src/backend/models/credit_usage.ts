@@ -46,7 +46,43 @@ export async function getByUserId(user_id: string) {
 
 export async function reducePeriodRemainCount(user_id: string, credit: number) {
   const db = await getDb();
-  const res = await db.query(`UPDATE credit_usage SET period_remain_count = period_remain_count - $1, used_count = used_count + $1 WHERE user_id = $2`, [credit, user_id]);
+  const res = await db.query(
+    `UPDATE credit_usage
+     SET period_remain_count = period_remain_count - $1,
+         used_count = used_count + $1,
+         updated_at = $3
+     WHERE user_id = $2`,
+    [credit, user_id, new Date()]
+  );
+  return res.rows[0];
+}
+
+export async function consumeIfEnough(user_id: string, credit: number) {
+  const db = await getDb();
+  const res = await db.query(
+    `UPDATE credit_usage
+     SET period_remain_count = period_remain_count - $1,
+         used_count = used_count + $1,
+         updated_at = $3
+     WHERE user_id = $2
+       AND period_remain_count >= $1
+     RETURNING *`,
+    [credit, user_id, new Date()]
+  );
+  return res.rows[0];
+}
+
+export async function restoreRemainCount(user_id: string, credit: number) {
+  const db = await getDb();
+  const res = await db.query(
+    `UPDATE credit_usage
+     SET period_remain_count = period_remain_count + $1,
+         used_count = GREATEST(used_count - $1, 0),
+         updated_at = $3
+     WHERE user_id = $2
+     RETURNING *`,
+    [credit, user_id, new Date()]
+  );
   return res.rows[0];
 }
 

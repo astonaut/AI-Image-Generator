@@ -3,7 +3,7 @@ import {
   updateEffectResult,
   updateEffectResultError,
 } from "@/backend/service/effect_result";
-import { reducePeriodRemainCountByUserId } from "@/backend/service/credit_usage";
+import { restoreCreditByUserId } from "@/backend/service/credit_usage";
 
 export const maxDuration = 60;
 
@@ -57,10 +57,6 @@ export async function POST(req: Request, res: Response) {
           output
         );
       }
-      reducePeriodRemainCountByUserId(
-        effectResult.user_id,
-        effectResult.credit
-      );
     } else if (webhookData.status === "failed") {
       await updateEffectResultError(
         effectResult.original_id,
@@ -69,6 +65,9 @@ export async function POST(req: Request, res: Response) {
         new Date(),
         ""
       );
+      if (effectResult.status !== "failed") {
+        await restoreCreditByUserId(effectResult.user_id, effectResult.credit);
+      }
       console.error("Error message:", webhookData.error);
     }
 

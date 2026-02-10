@@ -14,6 +14,27 @@ export async function update(paymentHistory: PaymentHistory) {
   return res.rows[0];
 }
 
+export async function markSuccessIfNotYet(paymentHistory: PaymentHistory) {
+  const db = await getDb();
+  const res = await db.query(
+    `UPDATE payment_history
+     SET stripe_subscription_id = $1,
+         stripe_customer_id = $2,
+         stripe_price_id = $3,
+         status = 'success'
+     WHERE id = $4
+       AND status <> 'success'
+     RETURNING *`,
+    [
+      paymentHistory.stripe_subscription_id,
+      paymentHistory.stripe_customer_id,
+      paymentHistory.stripe_price_id,
+      paymentHistory.id,
+    ]
+  );
+  return res.rows[0];
+}
+
 
 export async function getById(id: string) {
   const db = await getDb();

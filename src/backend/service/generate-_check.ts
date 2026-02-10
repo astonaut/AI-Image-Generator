@@ -1,6 +1,9 @@
 import { ResponseCodeEnum } from "@/backend/type/enum/response_code_enum";
 import { getUserByUuidAndEmail } from "@/backend/service/user";
-import { checkCreditUsageByUserId } from "@/backend/service/credit_usage";
+import {
+  consumeCreditByUserId,
+  getCreditUsageByUserId,
+} from "@/backend/service/credit_usage";
 
 export type GenerateCheckResult =
   | { ok: true }
@@ -20,21 +23,34 @@ export async function generateCheck(
     return { ok: false, status: ResponseCodeEnum.UNAUTHORIZED, detail: "Please login first" };
   }
 
-  const result = await checkCreditUsageByUserId(user_id, credit);
-  if (result !== 1) {
-    if (result === -1) {
-      return { ok: false, status: ResponseCodeEnum.CREDIT_NOT_INITED, detail: "try again" };
-    }
-    if (result === -2) {
+  const creditUsage = await getCreditUsageByUserId(user_id);
+  if (!creditUsage) {
+    return { ok: false, status: ResponseCodeEnum.CREDIT_NOT_INITED, detail: "try again" };
+  }
+
+  if (creditUsage.period_remain_count <= 0 || creditUsage.period_remain_count < credit) {
+    if (creditUsage.is_subscription_active !== true) {
       return {
         ok: false,
         status: ResponseCodeEnum.NONE_SUBSCRIBED,
         detail: "You are not subscribed or your credit is not enough, please purchase credits or subscribe.",
       };
     }
-    if (result === -3) {
-      return { ok: false, status: ResponseCodeEnum.FORBIDDEN, detail: "Your current monthly credit usage is exceeded" };
-    }
+    return {
+      ok: false,
+      status: ResponseCodeEnum.FORBIDDEN,
+      detail: "Your current monthly credit usage is exceeded",
+    };
   }
+
+  const consumed = await consumeCreditByUserId(user_id, credit);
+  if (!consumed) {
+    return {
+      ok: false,
+      status: ResponseCodeEnum.NONE_SUBSCRIBED,
+      detail: "Credit changed during request. Please try again.",
+    };
+  }
+
   return { ok: true };
 }

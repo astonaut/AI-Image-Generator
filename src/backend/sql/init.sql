@@ -118,3 +118,11 @@ CREATE TABLE user_subscriptions (
   created_at timestamp with time zone NULL, -- 创建时间
   updated_at timestamp with time zone NULL  -- 最后更新时间
 );
+
+-- Stripe webhook event log: idempotency lock table
+CREATE TABLE IF NOT EXISTS stripe_event_log (
+  id SERIAL PRIMARY KEY,
+  event_id text NOT NULL UNIQUE,
+  event_type text NOT NULL,
+  created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP
+);
