@@ -1,7 +1,7 @@
-{
+﻿{
   "themes": {
     "default": {
-      "name": "默认主题",
+      "name": "Default",
       "colors": {
         "primary": "220 100% 50%",
         "primary-dark": "220 100% 40%",
@@ -13,11 +13,11 @@
       }
     },
     "green": {
-      "name": "绿色主题",
+      "name": "Green",
       "colors": {
         "primary": "120 100% 40%",
         "primary-dark": "120 100% 30%",
-        "secondary": "120 60% 90%", 
+        "secondary": "120 60% 90%",
         "accent": "120 100% 50%",
         "background": "0 0% 100%",
         "foreground": "120 10% 10%",
@@ -25,7 +25,7 @@
       }
     },
     "orange": {
-      "name": "橙色主题",
+      "name": "Orange",
       "colors": {
         "primary": "30 100% 50%",
         "primary-dark": "30 100% 40%",
@@ -37,7 +37,7 @@
       }
     },
     "purple": {
-      "name": "紫色主题",
+      "name": "Purple",
       "colors": {
         "primary": "270 100% 50%",
         "primary-dark": "270 100% 40%",
@@ -49,7 +49,7 @@
       }
     },
     "red": {
-      "name": "红色主题",
+      "name": "Red",
       "colors": {
         "primary": "0 100% 50%",
         "primary-dark": "0 100% 40%",
@@ -61,5 +61,5 @@
       }
     }
   },
-  "currentTheme": "blue"
+  "currentTheme": "default"
 }

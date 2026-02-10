@@ -8,10 +8,9 @@ export async function createCreditUsage(creditUsage: CreditUsage) {
 
 export async function checkCreditUsageByUserId(user_id: string, credit: number) {
   const creditUsage = await getByUserId(user_id);
-  console.log("creditUsage", creditUsage);
-  // This situation generally does not exist because a credit_usage is created when the user is created
+
   if (!creditUsage) {
-    const newCreditUsage = await createCreditUsage({
+    await createCreditUsage({
       user_id: user_id,
       user_subscriptions_id: -1,
       is_subscription_active: false,
@@ -21,7 +20,6 @@ export async function checkCreditUsageByUserId(user_id: string, credit: number) 
       period_end: new Date(new Date().setMonth(new Date().getMonth() + 1)),
       created_at: new Date(),
     });
-    await createCreditUsage(newCreditUsage);
     return -1;
   }
   if (creditUsage.period_remain_count <= 0) {

@@ -2,29 +2,39 @@ import { ResponseCodeEnum } from "@/backend/type/enum/response_code_enum";
 import { getUserByUuidAndEmail } from "@/backend/service/user";
 import { checkCreditUsageByUserId } from "@/backend/service/credit_usage";
 
+export type GenerateCheckResult =
+  | { ok: true }
+  | { ok: false; status: number; detail: string };
 
-export async function generateCheck(user_id: string, user_email: string, credit: string) {
+export async function generateCheck(
+  user_id: string,
+  user_email: string,
+  credit: number
+): Promise<GenerateCheckResult> {
   if (user_id === undefined || user_email === undefined) {
-    return Response.json({ error: "Please login first" }, { status: ResponseCodeEnum.UNAUTHORIZED });
+    return { ok: false, status: ResponseCodeEnum.UNAUTHORIZED, detail: "Please login first" };
   }
 
   const user = await getUserByUuidAndEmail(user_id, user_email);
   if (!user || user.uuid !== user_id) {
-    return Response.json({ error: "Please login first" }, { status: ResponseCodeEnum.UNAUTHORIZED });
+    return { ok: false, status: ResponseCodeEnum.UNAUTHORIZED, detail: "Please login first" };
   }
 
-  const result = await checkCreditUsageByUserId(user_id, parseInt(credit));
+  const result = await checkCreditUsageByUserId(user_id, credit);
   if (result !== 1) {
-    // this situation generally does not exist because a credit_usage is created when the user is created
     if (result === -1) {
-      return Response.json({ detail: "try again" }, { status: ResponseCodeEnum.CREDIT_NOT_INITED });
+      return { ok: false, status: ResponseCodeEnum.CREDIT_NOT_INITED, detail: "try again" };
     }
     if (result === -2) {
-      return Response.json({ detail: "You are not subscribed or your credit is not enough, please purchase credits or subscribe." }, { status: ResponseCodeEnum.NONE_SUBSCRIBED });
+      return {
+        ok: false,
+        status: ResponseCodeEnum.NONE_SUBSCRIBED,
+        detail: "You are not subscribed or your credit is not enough, please purchase credits or subscribe.",
+      };
     }
     if (result === -3) {
-      return Response.json({ detail: "Your current monthly credit usage is exceeded" }, { status: ResponseCodeEnum.FORBIDDEN });
-    }   
+      return { ok: false, status: ResponseCodeEnum.FORBIDDEN, detail: "Your current monthly credit usage is exceeded" };
+    }
   }
-  return 1;
+  return { ok: true };
 }

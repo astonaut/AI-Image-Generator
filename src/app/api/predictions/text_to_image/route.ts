@@ -3,6 +3,9 @@ import Replicate from "replicate";
 import { createEffectResult } from "@/backend/service/effect_result";
 import { genEffectResultId } from "@/backend/utils/genId";
 import { generateCheck } from "@/backend/service/generate-_check";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-options";
+import { ResponseCodeEnum } from "@/backend/type/enum/response_code_enum";
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -17,12 +20,34 @@ export async function POST(request: Request) {
     );
   }
  
+  const session = await getServerSession(authOptions);
+  const sessionUser = session?.user as any;
+  if (!sessionUser?.uuid || !sessionUser?.email) {
+    return NextResponse.json({ detail: "Please login first" }, { status: ResponseCodeEnum.UNAUTHORIZED });
+  }
+
   const requestBody = await request.json();
-  const { model, prompt, width, height, output_format, aspect_ratio, user_id, user_email, effect_link_name, version, credit } = requestBody;
-  // check user
-  const result = await generateCheck(user_id, user_email, credit);
-  if (result !== 1) {
-    return NextResponse.json({ detail: "Failed to create effect result" }, { status: 500 });
+  const {
+    model,
+    prompt,
+    width,
+    height,
+    output_format,
+    aspect_ratio,
+    user_id,
+    user_email,
+    effect_link_name,
+    version,
+    credit,
+  } = requestBody;
+
+  if (sessionUser.uuid !== user_id || sessionUser.email !== user_email) {
+    return NextResponse.json({ detail: "User identity mismatch" }, { status: ResponseCodeEnum.FORBIDDEN });
+  }
+
+  const checkResult = await generateCheck(user_id, user_email, Number(credit) || 0);
+  if (!checkResult.ok) {
+    return NextResponse.json({ detail: checkResult.detail }, { status: checkResult.status });
   }
 
   const options = {

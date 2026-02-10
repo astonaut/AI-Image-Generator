@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { checkCreditUsageByUserId, reducePeriodRemainCountByUserId } from "@/backend/service/credit_usage";
 import Replicate from "replicate";
 import { ResponseCodeEnum } from "@/backend/type/enum/response_code_enum";
 import { createEffectResult } from "@/backend/service/effect_result";
 import { genEffectResultId } from "@/backend/utils/genId";
-import { getUserByUuidAndEmail } from "@/backend/service/user";
+import { generateCheck } from "@/backend/service/generate-_check";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-options";
 
 
 const replicate = new Replicate({
@@ -30,27 +31,19 @@ export async function POST(request: Request) {
   if (!model && !version) {
     return NextResponse.json({ detail: "Either model or version must be specified" }, { status: 400 });
   }
-//   check user
-  if (user_id === undefined) {
-    return Response.json({ error: "Please login first" }, { status: ResponseCodeEnum.UNAUTHORIZED });
-  }
-  const user = await getUserByUuidAndEmail(user_id, user_email);
-  if (!user || user.uuid !== user_id) {
+  const session = await getServerSession(authOptions);
+  const sessionUser = session?.user as any;
+  if (!sessionUser?.uuid || !sessionUser?.email) {
     return Response.json({ error: "Please login first" }, { status: ResponseCodeEnum.UNAUTHORIZED });
   }
 
-  const result = await checkCreditUsageByUserId(user_id, credit);
-  if (result !== 1) {
-    // this situation generally does not exist because a credit_usage is created when the user is created
-    if (result === -1) {
-      return Response.json({ detail: "try again" }, { status: ResponseCodeEnum.CREDIT_NOT_INITED });
-    }
-    if (result === -2) {
-      return Response.json({ detail: "You are not subscribed or your credit is not enough, please purchase credits or subscribe." }, { status: ResponseCodeEnum.NONE_SUBSCRIBED });
-    }
-    if (result === -3) {
-      return Response.json({ detail: "Your current monthly credit usage is exceeded" }, { status: ResponseCodeEnum.FORBIDDEN });
-    }
+  if (sessionUser.uuid !== user_id || sessionUser.email !== user_email) {
+    return Response.json({ detail: "User identity mismatch" }, { status: ResponseCodeEnum.FORBIDDEN });
+  }
+
+  const checkResult = await generateCheck(user_id, user_email, credit);
+  if (!checkResult.ok) {
+    return Response.json({ detail: checkResult.detail }, { status: checkResult.status });
   }
 
   // 创建replicate 请求参数
